@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Server Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f3f4f6; }
+        .log-entry { font-family: monospace; font-size: 0.85rem; padding: 4px 0; border-bottom: 1px dashed #e5e7eb; }
+        .session-entry { border: 1px solid #e5e7eb; margin-bottom: 8px; padding: 10px; border-radius: 6px; }
+        #logContainer { max-height: 40vh; overflow-y: scroll; margin-bottom: 20px; }
+        #sessionContainer { max-height: 40vh; overflow-y: scroll; }
+        /* Custom scrollbar for aesthetics */
+        #logContainer::-webkit-scrollbar, #sessionContainer::-webkit-scrollbar { width: 8px; }
+        #logContainer::-webkit-scrollbar-thumb, #sessionContainer::-webkit-scrollbar-thumb { background-color: #6366f1; border-radius: 4px; }
+        .key-text { word-break: break-all; }
+        .revoke-button { 
+            cursor: pointer;
+            transition: color 0.15s;
+        }
+        .revoke-button:hover {
+            color: #ef4444; /* red-500 */
+        }
+    </style>
+</head>
+<body class="p-4 sm:p-8">
+
+    <!-- Main Container -->
+    <div id="app-container" class="max-w-6xl mx-auto bg-white shadow-xl rounded-xl p-6 sm:p-10">
+
+        <div class="flex justify-between items-center mb-6 border-b pb-4">
+            <h1 class="text-3xl font-bold text-indigo-700">Secure Server Control</h1>
+            <button id="logout-button" class="py-1 px-3 border border-red-500 rounded-md shadow-sm text-sm font-medium text-red-500 hover:bg-red-50 focus:outline-none transition duration-150 hidden">
+                Logout
+            </button>
+        </div>
+        
+        <!-- Login Form -->
+        <div id="login-section">
+            <h2 class="text-2xl font-semibold mb-4 text-gray-800">Administrator Login</h2>
+            <form id="login-form" class="max-w-md space-y-4">
+                <div>
+                    <label for="key" class="block text-sm font-medium text-gray-700">Admin Key</label>
+                    <input type="text" id="key" name="key" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <div>
+                    <label for="password" class="block text-sm font-medium text-gray-700">Password</label>
+                    <input type="password" id="password" name="password" required class="mt-1 block w-full rounded-md border-gray-300 shadow-sm p-2 border focus:ring-indigo-500 focus:border-indigo-500">
+                </div>
+                <button type="submit" class="w-full py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150">
+                    Log In
+                </button>
+                <p id="login-message" class="text-center text-red-500 mt-2 hidden"></p>
+            </form>
+        </div>
+
+        <!-- Admin Dashboard (Hidden until login) -->
+        <div id="dashboard-section" class="hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                
+                <!-- Active Sessions Panel -->
+                <div class="lg:col-span-1">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Active Authorized Users</h2>
+                    <p class="text-sm text-gray-500 mb-2">Shows keys currently in use (updates every 3s). Idle sessions time out after 10 min.</p>
+                    <div id="sessionContainer" class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <p class="text-center text-gray-500" id="session-loading-indicator">Loading...</p>
+                    </div>
+                </div>
+
+                <!-- Server Logs Panel -->
+                <div class="lg:col-span-2">
+                    <h2 class="text-xl font-semibold text-gray-800 mb-4">Live Server Logs</h2>
+                    <div id="logContainer" class="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                        <p class="text-center text-gray-500" id="log-loading-indicator">Loading logs...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Access Keys Management -->
+            <div class="mt-8 border-t pt-6">
+                <h2 class="text-xl font-semibold text-gray-800 mb-4">Client Access Keys Management (Your "IPvH" security method)</h2>
+                
+                <!-- Add Key Form -->
+                <div class="bg-green-50 border border-green-200 rounded-lg p-4 mb-6">
+                    <h3 class="text-lg font-medium text-green-700 mb-3">Add New Access Key</h3>
+                    <form id="add-key-form" class="flex flex-col sm:flex-row gap-3">
+                        <input type="text" id="new-key-value" placeholder="Enter new key (e.g., secret-code-123)" required class="flex-grow rounded-md border-green-300 shadow-sm p-2 border focus:ring-green-500 focus:border-green-500">
+                        <input type="text" id="new-key-name" placeholder="Enter user name (e.g., John Smith)" required class="flex-grow rounded-md border-green-300 shadow-sm p-2 border focus:ring-green-500 focus:border-green-500">
+                        <button type="submit" class="py-2 px-4 rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 transition duration-150">
+                            Add Key
+                        </button>
+                    </form>
+                    <p id="add-key-message" class="text-center text-sm mt-2"></p>
+                </div>
+
+                <!-- Current Keys List -->
+                <h3 class="text-lg font-medium text-gray-800 mb-3">Current Active Keys</h3>
+                <div id="keysContainer" class="bg-indigo-50 border border-indigo-200 rounded-lg p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Keys will be injected here -->
+                </div>
+            </div>
+            
+        </div>
+
+    </div>
+
+    <script>
+        // DOM Elements
+        const loginSection = document.getElementById('login-section');
+        const dashboardSection = document.getElementById('dashboard-section');
+        const loginForm = document.getElementById('login-form');
+        const loginMessage = document.getElementById('login-message');
+        const logContainer = document.getElementById('logContainer');
+        const sessionContainer = document.getElementById('sessionContainer');
+        const keysContainer = document.getElementById('keysContainer');
+        const logoutButton = document.getElementById('logout-button');
+        const addKeyForm = document.getElementById('add-key-form');
+        const addKeyMessage = document.getElementById('add-key-message');
+
+
+        let statusInterval = null; // To hold the interval timer for status fetching
+
+        // Utility to set a simple cookie
+        const setCookie = (name, value, days) => {
+            let expires = "";
+            if (days) {
+                const date = new Date();
+                date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+                expires = "; expires=" + date.toUTCString();
+            }
+            // Use path=/ to make cookie available server-wide
+            document.cookie = name + "=" + (value || "")  + expires + "; path=/; SameSite=Strict";
+        }
+
+        // Utility to erase a cookie
+        const eraseCookie = (name) => {   
+            document.cookie = name+'=; Path=/; Expires=Thu, 01 Jan 1970 00:00:01 GMT;';
+        }
+
+        // --- Core Functions ---
+
+        // 1. Fetches and displays the server status (logs, sessions, keys)
+        const fetchStatus = async () => {
+            try {
+                const response = await fetch('/api/status');
+                
+                if (response.status === 403) {
+                    // If the server rejects the request, the admin session has expired or is invalid
+                    showLogin();
+                    return;
+                }
+
+                if (!response.ok) {
+                    logContainer.innerHTML = '<p class="text-red-500">Error fetching status. Server responded with an error.</p>';
+                    return;
+                }
+
+                const data = await response.json();
+                
+                renderLogs(data.logs);
+                renderSessions(data.activeSessions);
+                renderKeys(data.clientKeys);
+
+            } catch (error) {
+                console.error('Failed to fetch status:', error);
+                logContainer.innerHTML = '<p class="text-red-500">Network error while fetching status.</p>';
+            }
+        };
+
+        const renderLogs = (logs) => {
+            logContainer.innerHTML = '';
+            if (logs.length === 0) {
+                logContainer.innerHTML = '<p class="text-gray-500">No server activity recorded yet.</p>';
+            } else {
+                logs.forEach(log => {
+                    const div = document.createElement('div');
+                    div.className = 'log-entry text-gray-700';
+                    div.textContent = log;
+                    logContainer.appendChild(div);
+                });
+            }
+        };
+
+        const renderSessions = (sessions) => {
+            sessionContainer.innerHTML = '';
+            if (sessions.length === 0) {
+                sessionContainer.innerHTML = '<p class="text-gray-500">No active sessions.</p>';
+                return;
+            }
+
+            sessions.forEach(session => {
+                const isUnauthorized = session.warning;
+                const entry = document.createElement('div');
+                entry.className = `session-entry ${isUnauthorized ? 'bg-red-100 border-red-400' : 'bg-white'}`;
+                
+                let warningHtml = '';
+                if (isUnauthorized) {
+                    warningHtml = `<p class="text-red-700 text-xs font-semibold mt-1">
+                        <svg class="inline w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.3 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                        WARNING: Unauthorized Key Use! (Key: ${session.key})
+                    </p>`;
+                }
+
+                entry.innerHTML = `
+                    <p class="font-bold text-gray-800">${session.keyName} ${isUnauthorized ? '(Unknown)' : ''}</p>
+                    <p class="text-xs text-gray-600">Session ID: ${session.sessionId}...</p>
+                    <p class="text-xs text-gray-600">Last Active: ${session.lastActive}</p>
+                    ${warningHtml}
+                `;
+                sessionContainer.appendChild(entry);
+            });
+        };
+
+        const renderKeys = (keys) => {
+            keysContainer.innerHTML = '';
+            if (Object.keys(keys).length === 0) {
+                keysContainer.innerHTML = '<p class="text-gray-500 p-2">No keys configured yet. Add a key above!</p>';
+                return;
+            }
+
+            for (const key in keys) {
+                const name = keys[key];
+                const keyEntry = document.createElement('div');
+                keyEntry.className = 'p-3 bg-indigo-100 rounded-md shadow-sm flex justify-between items-start';
+                keyEntry.innerHTML = `
+                    <div class="flex-grow">
+                        <p class="text-sm font-bold text-indigo-800 mb-1">${name}</p>
+                        <p class="text-xs text-indigo-700 key-text">${key}</p>
+                    </div>
+                    <button data-key="${key}" class="revoke-button text-gray-500 ml-3 flex-shrink-0" title="Revoke Key">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+                keysContainer.appendChild(keyEntry);
+            }
+            
+            // Attach event listeners to the new revoke buttons
+            keysContainer.querySelectorAll('.revoke-button').forEach(button => {
+                button.addEventListener('click', (e) => {
+                    const keyToRevoke = e.currentTarget.dataset.key;
+                    // Note: window.confirm is used here for a quick admin action
+                    if (confirm(`Are you sure you want to revoke the key: ${keyToRevoke}? This will disconnect all users using it.`)) {
+                        revokeKey(keyToRevoke);
+                    }
+                });
+            });
+        };
+
+        // 3. Toggles the view to the Dashboard
+        const showDashboard = () => {
+            loginSection.classList.add('hidden');
+            dashboardSection.classList.remove('hidden');
+            logoutButton.classList.remove('hidden');
+            // Start fetching status every 3 seconds
+            fetchStatus(); // Initial fetch
+            statusInterval = setInterval(fetchStatus, 3000);
+        };
+
+        // 4. Toggles the view to the Login form
+        const showLogin = () => {
+            clearInterval(statusInterval); // Stop the status refresh interval
+            eraseCookie('admin_session');
+            loginSection.classList.remove('hidden');
+            dashboardSection.classList.add('hidden');
+            logoutButton.classList.add('hidden');
+            loginMessage.textContent = 'Session expired or logged out.';
+            loginMessage.classList.remove('hidden');
+            loginForm.reset();
+        };
+
+        // --- Key Management API Calls ---
+
+        const handleKeyAction = async (endpoint, payload, successMessage) => {
+            addKeyMessage.textContent = '';
+            try {
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    addKeyMessage.textContent = successMessage;
+                    addKeyMessage.classList.remove('text-red-500');
+                    addKeyMessage.classList.add('text-green-700');
+                    fetchStatus(); // Refresh dashboard data
+                    return true;
+                } else {
+                    addKeyMessage.textContent = `Error: ${data.message || 'An unknown server error occurred.'}`;
+                    addKeyMessage.classList.remove('text-green-700');
+                    addKeyMessage.classList.add('text-red-500');
+                    return false;
+                }
+            } catch (error) {
+                addKeyMessage.textContent = 'A network error occurred during the key action.';
+                addKeyMessage.classList.remove('text-green-700');
+                addKeyMessage.classList.add('text-red-500');
+                return false;
+            }
+        };
+
+        const addKey = async (key, name) => {
+            const success = await handleKeyAction('/api/keys/add', { key, name }, `Key '${name}' added successfully!`);
+            if (success) {
+                addKeyForm.reset();
+            }
+        };
+        
+        const revokeKey = async (key) => {
+            // Note: We use window.confirm() earlier to confirm the action.
+            await handleKeyAction('/api/keys/revoke', { key }, `Key revoked successfully! All users with this key have been disconnected.`);
+        };
+
+
+        // --- Event Handlers ---
+
+        // Handle login submission
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const key = document.getElementById('key').value;
+            const password = document.getElementById('password').value;
+
+            loginMessage.classList.add('hidden');
+            
+            try {
+                const response = await fetch('/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ key, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    // Set a simple cookie as a stand-in for session
+                    setCookie('admin_session', 'authenticated', 1); // 1 day validity
+                    showDashboard();
+                } else {
+                    loginMessage.textContent = data.message;
+                    loginMessage.classList.remove('hidden');
+                }
+            } catch (error) {
+                console.error('Login error:', error);
+                loginMessage.textContent = 'A network error occurred during login.';
+                loginMessage.classList.remove('hidden');
+            }
+        });
+        
+        // Handle Add Key submission
+        addKeyForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const key = document.getElementById('new-key-value').value.trim();
+            const name = document.getElementById('new-key-name').value.trim();
+            addKey(key, name);
+        });
+
+        // Handle logout
+        logoutButton.addEventListener('click', showLogin);
+
+
+        // --- Initialization ---
+        // Check if the user is already authenticated by trying to fetch status on load
+        const initializeApp = async () => {
+            // NOTE: The server handles cookie parsing, so we don't need to parse them client-side for init
+            try {
+                const response = await fetch('/api/status');
+                if (response.ok) {
+                    showDashboard();
+                } else {
+                    showLogin();
+                    // Clear the "Session expired" message if it was a fresh visit
+                    loginMessage.classList.add('hidden'); 
+                }
+            } catch (error) {
+                // Network error, assume not logged in or server is down
+                showLogin();
+                loginMessage.classList.add('hidden'); 
+            }
+        };
+        
+        document.addEventListener('DOMContentLoaded', initializeApp);
+
+    </script>
+</body>
+</html>

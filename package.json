@@ -1,0 +1,21 @@
+{
+  "name": "secure_api_runner_serverized",
+  "version": "1.0.0",
+  "description": "",
+  "main": "server.js", <--- RENDER WILL LOOK FOR THIS FILE
+  "type": "commonjs",
+  "scripts": {
+    "start": "node server.js", <--- RENDER WILL EXECUTE THIS COMMAND
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "express": "^4.19.2",
+    "cookie-parser": "^1.4.6"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Owner Login - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="bg-gray-900 min-h-screen flex items-center justify-center p-4">
+
+    <div class="bg-white p-8 md:p-10 rounded-xl shadow-2xl max-w-sm w-full border-t-8 border-red-600">
+        <div class="text-center">
+            <svg class="mx-auto h-12 w-12 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 11V3m0 8h.01M12 21h.01M12 16v-4h.01M12 16h.01M12 11a4 4 0 00-4 4v2a2 2 0 002 2h4a2 2 0 002-2v-2a4 4 0 00-4-4z" />
+            </svg>
+            <h1 class="text-3xl font-extrabold text-gray-900 mt-4 mb-2">Owner Login</h1>
+            <p class="text-gray-600">Access the secure key management panel.</p>
+        </div>
+
+        <form id="ownerLoginForm" class="mt-6">
+            <div class="space-y-4">
+                <div>
+                    <label for="ownerUsername" class="block text-sm font-medium text-gray-700 mb-1">Owner Username</label>
+                    <input id="ownerUsername" name="username" type="text" required
+                           class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-red-500 focus:border-red-500 text-base"
+                           placeholder="admin_owner">
+                </div>
+                <div>
+                    <label for="ownerPassword" class="block text-sm font-medium text-gray-700 mb-1">Owner Password</label>
+                    <input id="ownerPassword" name="password" type="password" required
+                           class="appearance-none block w-full px-4 py-3 border border-gray-300 rounded-lg shadow-sm placeholder-gray-400 focus:outline-none focus:ring-red-500 focus:border-red-500 text-base"
+                           placeholder="supersecuremasterkey">
+                </div>
+            </div>
+
+            <div id="message-box" class="mt-4 p-3 rounded-lg text-sm hidden" role="alert"></div>
+
+            <div class="mt-6">
+                <button type="submit" id="loginBtn"
+                        class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-sm text-lg font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-150 ease-in-out">
+                    Owner Sign In
+                </button>
+            </div>
+        </form>
+        <p class="mt-4 text-center text-sm">
+            <a href="/client_login.html" class="text-indigo-600 hover:text-indigo-800 font-medium">Switch to Client Login</a>
+        </p>
+    </div>
+
+    <script>
+        const ownerLoginForm = document.getElementById('ownerLoginForm');
+        const loginBtn = document.getElementById('loginBtn');
+        const msgBox = document.getElementById('message-box');
+
+        function showMessage(text, isError = false) {
+            msgBox.textContent = text;
+            msgBox.className = isError 
+                ? 'mt-4 p-3 rounded-lg text-sm bg-red-100 text-red-700' 
+                : 'mt-4 p-3 rounded-lg text-sm bg-green-100 text-green-700';
+            msgBox.classList.remove('hidden');
+        }
+
+        ownerLoginForm.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            loginBtn.disabled = true;
+            loginBtn.textContent = 'Logging in...';
+            msgBox.classList.add('hidden');
+
+            const username = document.getElementById('ownerUsername').value.trim();
+            const password = document.getElementById('ownerPassword').value;
+
+            try {
+                const response = await fetch('/api/owner-login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    showMessage("Owner login successful! Redirecting...", false);
+                    setTimeout(() => {
+                        window.location.href = '/owner.html'; 
+                    }, 1000);
+                } else {
+                    showMessage(data.message || "Login failed. Check credentials.", true);
+                }
+            } catch (error) {
+                console.error('Owner Login error:', error);
+                showMessage("An error occurred during login. Try again.", true);
+            } finally {
+                loginBtn.disabled = false;
+                loginBtn.textContent = 'Owner Sign In';
+            }
+        });
+    </script>
+</body>
+</html>
