@@ -15,9 +15,9 @@ app.use(express.static(path.join(__dirname, 'frontend')));
 // If running on Render, it will use the secure Environment Variables you set.
 // If running locally (npm start), it uses the fallback default passwords.
 
-const MASTER_PASSWORD = process.env.MASTER_PASSWORD || "supersecuremasterkey";
-const CLIENT_PASSWORD = process.env.CLIENT_PASSWORD || "client123";
-const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "admin456";
+const MASTER_PASSWORD = process.env.MASTER_PASSWORD || "5X9K4QJ3M7B2R1P6F8Z0D";
+const CLIENT_PASSWORD = process.env.CLIENT_PASSWORD || "0X3MS7FD7QHMFLJ29OAZ";
+const ADMIN_PASSWORD = process.env.ADMIN_PASSWORD || "EEMW05P77MPOQPMODT4Q";
 
 // Central object for all password constants
 const PASSWORDS = {
