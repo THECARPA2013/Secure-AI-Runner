@@ -31,7 +31,9 @@
     <!-- Authentication Card -->
     <div class="card w-full max-w-md bg-[#161b22] p-8 rounded-xl border border-[#30363d] text-gray-200">
         <h1 class="text-3xl font-bold mb-6 text-center text-[#c9d1d9]">Server Access</h1>
-        <p class="text-center text-sm mb-8 text-[#8b949e]">Enter the access code to attempt connection to the server's authentication API.</p>
+        <p class="text-center text-sm mb-8 text-[#8b949e]">
+            Connecting to: <code class="text-yellow-400">https://secure-ai-runner.onrender.com/api/auth</code>
+        </p>
 
         <div class="space-y-6">
             <!-- Password Input Field -->
@@ -60,6 +62,11 @@
     </div>
 
     <script>
+        // --- Configuration ---
+        const SERVER_BASE_URL = 'https://secure-ai-runner.onrender.com';
+        const API_ENDPOINT = '/api/auth';
+        // ---------------------
+
         // Get necessary elements
         const passwordInput = document.getElementById('password-input');
         const statusMessage = document.getElementById('status-message');
@@ -93,10 +100,11 @@
             loadingSpinner.classList.remove('hidden');
             updateStatus("Sending credentials...", "bg-blue-900 text-blue-300");
 
-            const apiUrl = '/api/auth'; // Relative URL to your server endpoint
+            // Construct the full URL using the known server base
+            const fullApiUrl = SERVER_BASE_URL + API_ENDPOINT;
 
             try {
-                const response = await fetch(apiUrl, {
+                const response = await fetch(fullApiUrl, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
