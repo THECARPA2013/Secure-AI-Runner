@@ -3,139 +3,106 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Server Authentication Check</title>
-    <!-- Load Tailwind CSS -->
+    <title>Secure AI Runner Client</title>
+    <!-- Load Tailwind CSS for modern styling -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
     <style>
         body {
             font-family: 'Inter', sans-serif;
-            background-color: #0d1117; /* Dark background matching a code editor theme */
-        }
-        .card {
-            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
-            transition: transform 0.3s ease;
-        }
-        .card:hover {
-            transform: translateY(-5px);
-        }
-        /* Custom ring focus color */
-        #password-input:focus {
-            border-color: #58a6ff;
-            box-shadow: 0 0 0 3px rgba(88, 166, 255, 0.5);
+            background-color: #f7f7f7;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
         }
     </style>
 </head>
-<body class="flex items-center justify-center min-h-screen p-4">
+<body class="p-4">
 
-    <!-- Authentication Card -->
-    <div class="card w-full max-w-md bg-[#161b22] p-8 rounded-xl border border-[#30363d] text-gray-200">
-        <h1 class="text-3xl font-bold mb-6 text-center text-[#c9d1d9]">Server Access</h1>
-        <p class="text-center text-sm mb-8 text-[#8b949e]">
-            Connecting to: <code class="text-yellow-400">https://secure-ai-runner.onrender.com/api/auth</code>
-        </p>
+    <div class="w-full max-w-md bg-white p-8 rounded-xl shadow-2xl border border-gray-100">
+        <h1 class="text-3xl font-extrabold text-gray-800 mb-2">Secure Access Gateway</h1>
+        <p class="text-gray-500 mb-6">Enter the master code to authenticate with the API.</p>
 
-        <div class="space-y-6">
-            <!-- Password Input Field -->
+        <!-- Authentication Form -->
+        <form id="authForm" class="space-y-6">
             <div>
-                <label for="password-input" class="block text-sm font-medium mb-2 text-[#c9d1d9]">Access Code</label>
-                <input type="password" id="password-input" placeholder="e.g., MASTER_PASSWORD value"
-                       class="w-full px-4 py-3 bg-[#0d1117] border border-[#30363d] rounded-lg focus:outline-none focus:ring-2 transition duration-150 text-white placeholder-gray-500">
+                <label for="password" class="block text-sm font-medium text-gray-700 mb-1">Master Access Code</label>
+                <input type="password" id="password" name="password" required 
+                       class="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:ring-indigo-500 focus:border-indigo-500 transition duration-150">
             </div>
 
-            <!-- Status Message Area -->
-            <div id="status-message" class="min-h-[2.5rem] p-3 rounded-lg text-sm font-medium text-center transition-all duration-300">
-                <!-- Status messages will appear here -->
-            </div>
-
-            <!-- Submit Button -->
-            <button id="auth-button" onclick="authenticate()"
-                    class="w-full flex items-center justify-center px-4 py-3 border border-transparent text-base font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-[#161b22] disabled:opacity-50 transition duration-150 ease-in-out">
-                <span id="button-text">Authenticate</span>
-                <!-- Loading Spinner -->
-                <svg id="loading-spinner" class="animate-spin -ml-1 mr-3 h-5 w-5 text-white hidden" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+            <button type="submit" 
+                    class="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg shadow-md text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-200">
+                Authenticate
             </button>
+        </form>
+
+        <!-- Message Display Area -->
+        <div id="messageBox" class="mt-6 p-3 rounded-lg text-sm font-medium hidden" role="alert">
+            <!-- Messages will appear here -->
         </div>
     </div>
 
     <script>
-        // --- Configuration ---
-        const SERVER_BASE_URL = 'https://secure-ai-runner.onrender.com';
-        const API_ENDPOINT = '/api/auth';
-        // ---------------------
+        // CRITICAL: Replace this placeholder with the actual URL of your deployed Render service.
+        // E.g., const API_BASE_URL = "https://your-service-name.onrender.com";
+        const API_BASE_URL = "http://localhost:3000"; 
+        
+        const API_ENDPOINT = `${API_BASE_URL}/api/auth`;
 
-        // Get necessary elements
-        const passwordInput = document.getElementById('password-input');
-        const statusMessage = document.getElementById('status-message');
-        const authButton = document.getElementById('auth-button');
-        const buttonText = document.getElementById('button-text');
-        const loadingSpinner = document.getElementById('loading-spinner');
+        const authForm = document.getElementById('authForm');
+        const passwordInput = document.getElementById('password');
+        const messageBox = document.getElementById('messageBox');
 
-        /**
-         * Utility function to update the status message box.
-         * @param {string} message The text to display.
-         * @param {string} styleClass Tailwind class for styling (e.g., 'bg-green-500' or 'bg-red-500').
-         */
-        function updateStatus(message, styleClass) {
-            statusMessage.className = `min-h-[2.5rem] p-3 rounded-lg text-sm font-medium text-center transition-all duration-300 ${styleClass}`;
-            statusMessage.textContent = message;
+        // Utility to display messages
+        function showMessage(text, isSuccess = false) {
+            messageBox.textContent = text;
+            messageBox.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+            
+            if (isSuccess) {
+                messageBox.classList.add('bg-green-100', 'text-green-700');
+            } else {
+                messageBox.classList.add('bg-red-100', 'text-red-700');
+            }
         }
 
-        /**
-         * Handles the authentication attempt by sending the password to the server.
-         */
-        async function authenticate() {
-            const password = passwordInput.value.trim();
-            if (!password) {
-                updateStatus("Please enter an access code.", "bg-yellow-800 text-yellow-200");
-                return;
-            }
+        // Handle form submission
+        authForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Stop the default form submission
+            
+            const password = passwordInput.value;
 
-            // UI State: Loading
-            authButton.disabled = true;
-            buttonText.textContent = "Connecting...";
-            loadingSpinner.classList.remove('hidden');
-            updateStatus("Sending credentials...", "bg-blue-900 text-blue-300");
-
-            // Construct the full URL using the known server base
-            const fullApiUrl = SERVER_BASE_URL + API_ENDPOINT;
-
+            // Clear previous messages
+            messageBox.classList.add('hidden');
+            
             try {
-                const response = await fetch(fullApiUrl, {
+                // Send the POST request to the API
+                const response = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    // Send the password in the request body
-                    body: JSON.stringify({ password: password })
+                    body: JSON.stringify({ password: password }),
                 });
 
-                // The server should return a status like 200 for success, 401 for failure
+                const data = await response.json();
+
                 if (response.ok) {
-                    const data = await response.json();
-                    updateStatus(`Access Granted! Server message: ${data.message || 'Success.'}`, "bg-green-700 text-green-100");
-                } else if (response.status === 401 || response.status === 403) {
-                    // Unauthorized or Forbidden
-                    updateStatus("Authentication Failed: Invalid access code.", "bg-red-700 text-red-100");
+                    // Success (HTTP status 200)
+                    showMessage(`✅ Success! ${data.message} Token: ${data.token.substring(0, 15)}...`, true);
+                    console.log("Token received:", data.token);
                 } else {
-                    // Other server errors (500, etc.)
-                    updateStatus(`Server Error (${response.status}): Could not complete request.`, "bg-red-900 text-red-200");
+                    // Failure (HTTP status 400, 401, etc.)
+                    showMessage(`❌ Authentication Failed: ${data.message || 'Unknown error.'}`, false);
                 }
 
             } catch (error) {
                 // Network or CORS error
-                console.error("Fetch error:", error);
-                updateStatus("Connection Error: Could not reach the server API. Check your network or server URL.", "bg-red-800 text-red-200");
-            } finally {
-                // UI State: Reset
-                authButton.disabled = false;
-                buttonText.textContent = "Authenticate";
-                loadingSpinner.classList.add('hidden');
+                console.error('Fetch error:', error);
+                showMessage(`⚠️ Network Error. Could not connect to the API at ${API_ENDPOINT}. Check the API_BASE_URL.`, false);
             }
-        }
+        });
     </script>
+
 </body>
 </html>
